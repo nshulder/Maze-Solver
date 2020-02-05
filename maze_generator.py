@@ -1,11 +1,20 @@
+import pygame
+import time
 import random
+pygame.init()
 
 
-class Edge:
-    def __init__(self, x, y, direction):
-        self.x = x
-        self.y = y
-        self.direction = direction
+SCREEN_SIZE = 501
+screen = pygame.display.set_mode((SCREEN_SIZE, SCREEN_SIZE))
+pygame.display.set_caption("Maze")
+width = 25
+
+
+WHITE = (255,255,255)
+GREY = (200,200,200)
+BLACK = (0,0,0)
+BLUE = (90,200,255)
+RED = (255,0,0)
 
 
 class Cell:
@@ -26,6 +35,19 @@ class Cell:
         # Remove both walls between two cells
         self.walls[direction] = False
         other.walls[Cell.opposite_wall[direction]] = False
+
+    def draw(self):
+        x = self.x * width
+        y = self.y * width
+
+        color = BLACK if self.walls['N'] else GREY
+        draw_line(screen, color, (x, y), (x + width, y), 1)
+        color = BLACK if self.walls['S'] else GREY
+        draw_line(screen, color, (x, y + width), (x + width, y + width), 1)
+        color = BLACK if self.walls['E'] else GREY
+        draw_line(screen, color, (x + width, y), (x + width, y + width), 1)
+        color = BLACK if self.walls['W'] else GREY
+        draw_line(screen, color, (x, y), (x, y + width), 1)
 
 
 class Maze:
@@ -57,13 +79,46 @@ class Maze:
         # Following iterative backtracking method algorithm for maze generation on Wikipedia
         while not(len(stack) == 0):
             cell = stack.pop()
+            cell.draw()
+            pygame.draw.rect(screen, BLUE, ((cell.x * width) + 5, (cell.y * width) + 5, width-10, width-10))
             neighbors = self.unvisited_neighbors(cell)
             if neighbors:
                 stack.append(cell)
                 direction, next_cell = random.choice(neighbors)
                 cell.remove_wall(next_cell, direction)
+                cell.draw()
+                pygame.draw.rect(screen, GREY, ((cell.x * width) + 2, (cell.y * width) + 2, width - 4, width - 4))
                 stack.append(next_cell)
 
+    def clear_rects(self):
+        for col in self.maze:
+            for cell in col:
+                pygame.draw.rect(screen, GREY, ((cell.x * width) + 2, (cell.y * width) + 2, width - 4, width - 4))
+        pygame.display.flip()
 
-maze = Maze()
-maze.dfs_generate()
+
+def draw_line(surface, color, start_pos, end_pos, line_width):
+    pygame.draw.line(surface, color, start_pos, end_pos, line_width)
+    pygame.display.flip()
+    time.sleep(.005)
+
+
+def main():
+    screen.fill(GREY)
+
+    # Create maze and generate the full-on maze
+    maze_size = int(SCREEN_SIZE/width)
+    maze_generator = Maze(size_x=maze_size, size_y=maze_size)
+    maze_generator.dfs_generate()
+    maze_generator.clear_rects()
+
+    keep_running = True
+
+    while keep_running:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                keep_running = False
+
+
+main()
+pygame.quit()
